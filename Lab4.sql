@@ -105,7 +105,20 @@ INSERT INTO `RATING` VALUES(3,5,1,5);
 INSERT INTO `RATING` VALUES(4,1,3,2);
 INSERT INTO `RATING` VALUES(5,4,5,4);
 
--- 3)	Display the number of the customer group by their genders who have placed any order of amount greater than or equal to Rs.3000.
+
+-- Write queries for the following:
+-- 4) Display the total number of customers based on gender who have placed individual orders of worth at least Rs.3000.
+-- 5) Display all the orders along with product name ordered by a customer having Customer_Id=2
+-- 6) Display the Supplier details who can supply more than one product.
+-- 7) Find the least expensive product from each category and print the table with category id, name, product name and price of the product
+-- 8) Display the Id and Name of the Product ordered after “2021-10-05”.
+-- 9) Display customer name and gender whose names start or end with character 'A'.
+-- 10) Create a stored procedure to display supplier id, name, Rating(Average rating of all the products sold by every customer) and
+-- Type_of_Service. For Type_of_Service, If rating =5, print “Excellent Service”,If rating >4 print “Good Service”, If rating >2 print “Average
+-- Service” else print “Poor Service”. Note that there should be one rating per supplier.
+
+	
+-- 4	Display the number of the customer group by their genders who have placed any order of amount greater than or equal to Rs.3000.
 select customer.cus_gender,count(customer.cus_gender) as count 
 from customer
 join `order`
@@ -113,14 +126,14 @@ on customer.cus_id=`order`.cus_id
 where `order`.ord_amount>=3000
 group by customer.cus_gender;
 
--- 4)	Display all the orders along with the product name ordered by a customer having Customer_Id=2.
+-- 5	Display all the orders along with the product name ordered by a customer having Customer_Id=2.
 select `order`.*, product.pro_name
 from `order`, product_details, product
 where `order`.cus_id=2
 and `order`.prod_id = product_details.prod_id
 and product_details.pro_id = product.pro_id;
 
--- 5)	Display the Supplier details who can supply more than one product.
+-- 6	Display the Supplier details who can supply more than one product.
 select supplier.*
 from supplier, product_details
 where supplier.supp_id in
@@ -132,7 +145,7 @@ having count(product_details.supp_id) > 1
 )
 group by supplier.supp_id;
 
--- 6)	Find the category of the product whose order amount is minimum.
+-- 7	Find the least expensive product from each category and print the table with category id, name, product name and price of the product
 select category.*, `order`.ord_id
 from `order`
 inner join product_details
@@ -141,27 +154,37 @@ inner join product on product.pro_id = product_details.pro_id
 inner join category on category.cat_id = product.cat_id
 having min(`order`.ord_amount);
 
--- 7)	Display the Id and Name of the Product ordered after “2021-10-05”.
+-- 8	Display the Id and Name of the Product ordered after “2021-10-05”.
 select product.pro_id, product.pro_name from product
 join product_details on product.pro_id = product_details.pro_id
 join `order` on product_details.prod_id = `order`.prod_id
 where `order`.ord_date > '2021-10-05';
 
--- 8)	Display customer name and gender whose names start or end with character 'A'.
+-- 9)	Display customer name and gender whose names start or end with character 'A'.
 select cus_name, cus_id from customer
 where cus_name like 'A%' or cus_name like '%A';
 
--- 9)	Create a stored procedure to display the Rating for a Supplier if any along with the Verdict on that rating if any like if rating >4 then “Genuine Supplier” if rating >2 “Average Supplier” else “Supplier should not be considered”.
-DELIMITER &&
-create procedure proc()
-BEGIN
-select supplier.supp_id, supplier.supp_name, rating.rat_ratstars,
-case
-	when rating.rat_ratstars >4 then 'GENUINE Supplier'
-    when rating.rat_ratstars >2 then 'Average Supplier'
-    else 'Supplier should not be considered'
-END as verdict from rating inner join supplier on supplier.supp_id = rating.supp_id;
-END
-&& DELIMITER ;
+--  10)	Create a stored procedure to display supplier id, name, Rating(Average rating of all the products sold by every customer) and
+-- Type_of_Service. For Type_of_Service, If rating =5, print “Excellent Service”,If rating >4 print “Good Service”, If rating >2 print “Average
+-- Service” else print “Poor Service”. Note that there should be one rating per supplier.
 
-call proc();
+CREATE PROCEDURE proc()
+BEGIN
+    SELECT 
+        supplier.supp_id, 
+        supplier.supp_name, 
+        AVG(rating.rat_ratstars) AS avg_rating,
+        CASE
+            WHEN AVG(rating.rat_ratstars) = 5 THEN 'Excellent Service'
+            WHEN AVG(rating.rat_ratstars) > 4 THEN 'Good Service'
+            WHEN AVG(rating.rat_ratstars) > 2 THEN 'Average Service'
+            ELSE 'Poor Service'
+        END AS Type_of_Service
+    FROM 
+        rating 
+    INNER JOIN 
+        supplier ON supplier.supp_id = rating.supp_id
+    GROUP BY 
+        supplier.supp_id, supplier.supp_name;
+END &&
+
